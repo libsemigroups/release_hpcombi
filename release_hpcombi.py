@@ -4,7 +4,6 @@
 """
 # pylint: disable=invalid-name, missing-function-docstring
 
-import os
 import re
 import sys
 import subprocess
@@ -15,7 +14,6 @@ from release import (
     old_version,
     rc_branch,
     stable_branch,
-    today,
     exec_string,
     add_checks,
     exit_abort,
@@ -34,7 +32,9 @@ def _check_readme():
     readme = get_file_contents("README.md")
     if readme.find("v" + old_version()) != -1:
         line_num = readme.count("\n", 0, readme.find(old_version()))
-        exit_abort(f"Found old version number {old_version()} in README.md:{line_num}")
+        exit_abort(
+            f"Found old version number {old_version()} in README.md:{line_num}"
+        )
     return "ok!"
 
 
@@ -43,10 +43,12 @@ def _check_cmakelists_txt_version_number():
     with open("CMakeLists.txt", "r", encoding="utf-8") as f:
         f = f.read()
         for i, part in enumerate(("MAJOR", "MINOR", "PATCH")):
-            p = fr"set\(VERSION_{part}\s*(\d+)"
+            p = rf"set\(VERSION_{part}\s*(\d+)"
             m = re.search(p, f)
             if m is None:
-                exit_abort(f"Cannot find {part} version number in CMakeLists.txt")
+                exit_abort(
+                    f"Cannot find {part} version number in CMakeLists.txt"
+                )
             elif m.group(1) != version_number[i]:
                 exit_abort(
                     f"{part} version number in CMakeLists.txt is {m.group(1)}"
@@ -54,20 +56,30 @@ def _check_cmakelists_txt_version_number():
                 )
     return "ok!"
 
+
 def _check_cpplint():
-   try:
-       exec_string("cpplint --repository=include include/hpcombi/*.hpp")
-   except subprocess.CalledProcessError as e:
-       sys.stderr.write("\n" + "\n".join(x for x in e.output.decode("utf-8").split("\n") if not x.startswith("Done processing")))
-       sys.stderr.flush()
-       exit_abort("cpplint failed")
-   return "ok!"
+    try:
+        exec_string("cpplint --repository=include include/hpcombi/*.hpp")
+    except subprocess.CalledProcessError as e:
+        sys.stderr.write(
+            "\n"
+            + "\n".join(
+                x
+                for x in e.output.decode("utf-8").split("\n")
+                if not x.startswith("Done processing")
+            )
+        )
+        sys.stderr.flush()
+        exit_abort("cpplint failed")
+    return "ok!"
+
 
 add_checks(
     ("version number in README.md", _check_readme),
     ("version number in CMakeLists.txt", _check_cmakelists_txt_version_number),
     ("running cpplint", _check_cpplint),
 )
+
 
 def release_steps():
     """
@@ -83,7 +95,9 @@ def release_steps():
         f"git checkout {stable_branch()} && git merge {rc_branch()} && git tag v{new_version()}",
         f"git push origin {stable_branch()} --tags",
         "create a new release at https://github.com/libsemigroups/hpcombi/releases/new",
-        f"git checkout main && git merge {stable_branch()} && git push origin main"
+        "run the script etc/deploy-doc.sh to update the website",
+        f"git checkout main && git merge {stable_branch()} && git push origin main",
+        f"git branch -D {rc_branch()} && git push origin --delete {rc_branch()}",
     )
 
 

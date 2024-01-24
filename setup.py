@@ -15,7 +15,7 @@ if os.path.isfile(requirementPath):
 
 setup(
     name="release_hpcombi",
-    version="0.0.0",
+    version="0.0.1",
     py_modules=["release_hpcombi"],
     url="",
     license="GPL3",
